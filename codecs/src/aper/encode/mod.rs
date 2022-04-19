@@ -20,6 +20,7 @@ pub fn encode_choice_idx(
     extended: bool,
 ) -> Result<(), AperCodecError> {
     log::trace!("encode_choice_idx");
+    check_bounds(idx, Some(lb), Some(ub), "Choice index")?;
 
     if extended {
         return Err(AperCodecError::new(
@@ -66,6 +67,8 @@ pub fn encode_integer(
     extended: bool,
 ) -> Result<(), AperCodecError> {
     log::trace!("encode_integer");
+    check_bounds(value, lb, ub, "Integer")?;
+
     if extended {
         return Err(AperCodecError::new(
             "Encode of extended integer not yet implemented",
@@ -102,6 +105,8 @@ pub fn encode_enumerated(
     extended: bool,
 ) -> Result<(), AperCodecError> {
     log::trace!("encode_enumerated");
+    check_bounds(value as i128, lb, ub, "Enum value")?;
+
     if extended {
         return Err(AperCodecError::new(
             "Encode of extended enumerated not yet implemented",
@@ -125,6 +130,7 @@ pub fn encode_bitstring(
     extended: bool,
 ) -> Result<(), AperCodecError> {
     log::trace!("encode_bitstring");
+    check_bounds(bit_string.len() as i128, lb, ub, "Bitstring length")?;
 
     if extended {
         return Err(AperCodecError::new(
@@ -163,6 +169,7 @@ pub fn encode_octetstring(
     extended: bool,
 ) -> Result<(), AperCodecError> {
     log::trace!("encode_octetstring");
+    check_bounds(octet_string.len() as i128, lb, ub, "Octet string length")?;
 
     if extended {
         return Err(AperCodecError::new(
@@ -201,6 +208,7 @@ pub fn encode_length_determinent(
     value: usize,
 ) -> Result<(), AperCodecError> {
     log::trace!("encode_length_determinent");
+    check_bounds(value as i128, lb, ub, "Length determinent")?;
 
     if normally_small {
         return encode_normally_small_length_determinent(data, value);
@@ -222,6 +230,8 @@ fn encode_string(
     value: &String,
     extended: bool,
 ) -> Result<(), AperCodecError> {
+    check_bounds(value.len() as i128, lb, ub, "String length")?;
+
     if extended {
         return Err(AperCodecError::new(
             "Encode of extended visible string not yet implemented",
@@ -278,6 +288,32 @@ pub fn encode_utf8_string(
     encode_string(data, lb, ub, is_extensible, value, extended)
 }
 
+fn check_bounds(
+    value: i128,
+    lb: Option<i128>,
+    ub: Option<i128>,
+    field: &str,
+) -> Result<(), AperCodecError> {
+    if let Some(l) = lb {
+        if value < l {
+            return Err(AperCodecError::new(format!(
+                "{} {} is less than lower bound {}",
+                field, value, l,
+            )));
+        }
+    }
+
+    if let Some(u) = ub {
+        if value > u {
+            return Err(AperCodecError::new(format!(
+                "{} {} is greater than upper bound {}",
+                field, value, u,
+            )));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -291,5 +327,113 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(data.bits.len(), 1);
         assert_eq!(data.bits[0], true);
+    }
+
+    #[test]
+    fn int_too_small() {
+        assert!(encode_integer(&mut AperCodecData::new(), Some(1), None, false, 0, false).is_err());
+    }
+
+    #[test]
+    fn int_too_big() {
+        assert!(encode_integer(
+            &mut AperCodecData::new(),
+            Some(-1),
+            Some(0),
+            false,
+            1,
+            false
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn octetstring_too_small() {
+        assert!(encode_octetstring(
+            &mut AperCodecData::new(),
+            Some(2),
+            None,
+            false,
+            &vec![0],
+            false
+        )
+        .is_err());
+    }
+    #[test]
+    fn octetstring_too_big() {
+        assert!(encode_octetstring(
+            &mut AperCodecData::new(),
+            None,
+            Some(1),
+            false,
+            &vec![0, 0],
+            false
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn string_too_small() {
+        assert!(encode_visible_string(
+            &mut AperCodecData::new(),
+            Some(2),
+            None,
+            false,
+            &"a".to_string(),
+            false
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn string_too_big() {
+        assert!(encode_visible_string(
+            &mut AperCodecData::new(),
+            None,
+            Some(1),
+            false,
+            &"aa".to_string(),
+            false
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn length_too_small() {
+        assert!(
+            encode_length_determinent(&mut AperCodecData::new(), Some(2), None, false, 1,).is_err()
+        );
+    }
+    #[test]
+    fn length_too_big() {
+        assert!(
+            encode_length_determinent(&mut AperCodecData::new(), None, Some(1), false, 2,).is_err()
+        );
+    }
+
+    #[test]
+    fn bitstring_too_small() {
+        assert!(encode_bitstring(
+            &mut AperCodecData::new(),
+            Some(2),
+            None,
+            false,
+            bits![Msb0,u8; 0],
+            false
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn bitstring_too_big() {
+        assert!(encode_bitstring(
+            &mut AperCodecData::new(),
+            None,
+            Some(1),
+            false,
+            bits![Msb0,u8; 0, 0],
+            false
+        )
+        .is_err());
     }
 }
