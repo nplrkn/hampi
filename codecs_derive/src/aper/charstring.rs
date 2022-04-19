@@ -94,9 +94,7 @@ pub(super) fn generate_aper_decode_for_asn_charstring(
     let tokens = quote! {
 
         impl asn1_codecs::aper::AperCodec for #name {
-            type Output = Self;
-
-            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self::Output, asn1_codecs::aper::AperCodecError> {
+            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self, asn1_codecs::aper::AperCodecError> {
                 let decoded = asn1_codecs::aper::decode::#decode_fn_name(data, #sz_lb, #sz_ub, #sz_ext)?;
                 Ok(Self(decoded))
             }

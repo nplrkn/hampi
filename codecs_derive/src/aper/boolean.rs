@@ -14,9 +14,7 @@ pub(super) fn generate_aper_codec_for_asn_boolean(
     let tokens = quote! {
 
         impl asn1_codecs::aper::AperCodec for #name {
-            type Output = Self;
-
-            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self::Output, asn1_codecs::aper::AperCodecError> {
+            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self, asn1_codecs::aper::AperCodecError> {
 
                 let value = asn1_codecs::aper::decode::decode_bool(data)?;
                 Ok(Self(value))

@@ -18,9 +18,7 @@ pub(super) fn generate_aper_decode_for_asn_open_type(
 
     let tokens = quote! {
         impl asn1_codecs::aper::AperCodec for #name {
-            type Output = Self;
-
-            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self::Output, asn1_codecs::aper::AperCodecError> {
+            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self, asn1_codecs::aper::AperCodecError> {
                 let length = asn1_codecs::aper::decode::decode_length_determinent(data, None, None, false)?;
 
                 log::trace!("open type: decoded length: {}", length);

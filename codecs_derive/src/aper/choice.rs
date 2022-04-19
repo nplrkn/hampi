@@ -24,9 +24,7 @@ pub(super) fn generate_aper_codec_for_asn_choice(
     let tokens = quote! {
 
         impl asn1_codecs::aper::AperCodec for #name {
-            type Output = Self;
-
-            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self::Output, asn1_codecs::aper::AperCodecError> {
+            fn decode(data: &mut asn1_codecs::aper::AperCodecData) -> Result<Self, asn1_codecs::aper::AperCodecError> {
 
                 let (idx, extended) = asn1_codecs::aper::decode::decode_choice_idx(data, #lb, #ub, #ext)?;
                 if !extended {
