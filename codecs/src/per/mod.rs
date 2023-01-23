@@ -267,7 +267,8 @@ impl PerCodecData {
         Ok(bv)
     }
 
-    fn get_bytes(&mut self, length: usize) -> Result<Vec<u8>, PerCodecError> {
+    /// Get `length` bytes at the current decode offset and advance the offset.
+    pub fn get_bytes(&mut self, length: usize) -> Result<Vec<u8>, PerCodecError> {
         let length = length * 8;
         if length + self.decode_offset > self.bits.len() {
             return Err(PerCodecError::new(
